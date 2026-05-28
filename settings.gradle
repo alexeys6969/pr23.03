@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "catalog_shashin"
 include ':app'
+include ':network'
+include ':UIComponents'
