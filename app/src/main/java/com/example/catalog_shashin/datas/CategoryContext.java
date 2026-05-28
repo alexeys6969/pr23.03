@@ -1,7 +1,6 @@
 package com.example.catalog_shashin.datas;
 
 import com.example.catalog_shashin.domains.models.Category;
-import com.example.catalog_shashin.domains.models.Сategory;
 
 import java.util.ArrayList;
 

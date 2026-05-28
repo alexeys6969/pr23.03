@@ -7,8 +7,6 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.core.app.ActivityCompat;
-
 import com.example.catalog_shashin.MainActivity;
 import com.example.catalog_shashin.R;
 import com.example.network.domains.common.Settings;
@@ -19,15 +17,17 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.squareup.picasso.Picasso;
 
 public class BottomSheetHelper {
-    public static void Create (
+    public static void Create(
             Context context,
             Activity activity,
             Product product,
             BthCustom bthCardAdd,
             ProgressDialogHelper progressDialogHelper) {
+
         progressDialogHelper.progressDialog.show();
         BottomSheetDialog dialog = new BottomSheetDialog(context);
         View view = LayoutInflater.from(context).inflate(R.layout.item_product_description, null);
+
         TextView tvName = view.findViewById(R.id.tvName);
         TextView tvDescription = view.findViewById(R.id.tvDescription);
         TextView tvExpenditure = view.findViewById(R.id.tvExpenditure);
@@ -41,16 +41,21 @@ public class BottomSheetHelper {
                     .load(Settings.URL + "/img/" + product.img)
                     .into(image);
         }
+
         tvName.setText(product.name);
         tvDescription.setText(product.description);
         tvExpenditure.setText(product.expenditure);
         bthAdd.init("Добавить за " + product.price + "P", BthCustom.TypeButton.PRIMARY);
+
         bthClose.setOnClickListener(v -> {
             dialog.hide();
         });
+
         bthAdd.Bth.setOnClickListener(v -> {
-            ((MainActivity)activity).BasketCreate(product, bthCardAdd;
+            ((MainActivity)activity).BasketCreate(product, bthCardAdd);
+            dialog.hide();
         });
+
         dialog.setContentView(view);
         progressDialogHelper.progressDialog.hide();
         dialog.show();
