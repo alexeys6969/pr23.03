@@ -1,35 +1,47 @@
 package com.example.catalog_shashin;
 
+import android.content.Context;
+import android.media.Image;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.catalog_shashin.presentations.adapters.CategoryAdapter;
+import com.example.catalog_shashin.presentations.adapters.StockAdapter;
 import com.example.catalog_shashin.presentations.utils.BottomSheetHelper;
 import com.example.catalog_shashin.presentations.utils.ProgressDialogHelper;
 import com.example.catalog_shashin.datas.CategoryContext;
 import com.example.network.datas.baskets.BasketCreate;
 import com.example.network.datas.baskets.BasketUpdate;
 import com.example.network.datas.products.ProductGet;
+import com.example.network.datas.stocks.StockGet;
 import com.example.network.domains.callbacks.MyResponseCallback;
+import com.example.network.domains.common.Settings;
 import com.example.network.domains.models.BasketParams;
 import com.example.network.domains.models.Product;
+import com.example.network.domains.models.Stock;
 import com.example.uicomponents.button.BthCustom;
 import com.example.uicomponents.button.BthSmall;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     RecyclerView llCategory;
+    RecyclerView llStock;
     LinearLayout llProducts;
     ProgressDialogHelper progressDialogHelper;
     String Token = "07a922ae-4e9f-4981-b9c0-bf31d1786439";
@@ -40,11 +52,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         llCategory = findViewById(R.id.llCategory);
+        llStock = findViewById(R.id.llStock);
+        llStock.setLayoutManager(
+                new LinearLayoutManager(
+                        this,
+                        LinearLayoutManager.HORIZONTAL,
+                        false
+                )
+        );
         llProducts = findViewById(R.id.llProducts);
         CategoryAdapter categoryAdapter = new CategoryAdapter(this, CategoryContext.allCategory());
         llCategory.setAdapter(categoryAdapter);
         progressDialogHelper = new ProgressDialogHelper(this);
         RequestProductGet();
+        RequestStockGet();
     }
 
     public void RequestProductGet() {
@@ -70,67 +91,81 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void BasketCreate(Product product, BthCustom bthAdd) {
+
         Log.d("DEBUG_BTN", "=== BasketCreate called ===");
 
-        ChangeBthState(bthAdd, true);
-
         progressDialogHelper.progressDialog.show();
-        BasketCreate RequestBC = new BasketCreate(
+
+        BasketCreate RBC = new BasketCreate(
                 Token,
-                new BasketParams(product.id, 0),
+                new BasketParams(1, product.id),
                 new MyResponseCallback() {
+
                     @Override
                     public void onCompile(String result) {
+
                         Log.d("BASKET CREATE", result);
+
+                        bthAdd.init("Убрать", BthCustom.TypeButton.SECONDARY);
+
+                        // разблокируем
+                        bthAdd.Bth.setEnabled(true);
+
                         progressDialogHelper.progressDialog.hide();
                     }
 
                     @Override
                     public void onError(String error) {
+
                         Log.e("BASKET ERROR", error);
-                        ChangeBthState(bthAdd, false);
+
+                        bthAdd.Bth.setEnabled(true);
+
                         progressDialogHelper.progressDialog.hide();
                     }
                 }
         );
-        RequestBC.execute();
+
+        RBC.execute();
     }
 
     public void BasketUPD(Product product, BthCustom bthAdd) {
+
         Log.d("DEBUG_BTN", "=== BasketUPD called ===");
 
-        ChangeBthState(bthAdd, false);
-
         progressDialogHelper.progressDialog.show();
+
         BasketUpdate RBU = new BasketUpdate(
-                new BasketParams(0, product.id),
+                new BasketParams(0, product.id), // 0 = удалить товар
                 Token,
                 new MyResponseCallback() {
+
                     @Override
                     public void onCompile(String result) {
+
                         Log.d("BASKET UPDATE", result);
+
+                        bthAdd.init("Добавить", BthCustom.TypeButton.PRIMARY);
+
+                        // разблокируем
+                        bthAdd.Bth.setEnabled(true);
+
                         progressDialogHelper.progressDialog.hide();
                     }
 
                     @Override
                     public void onError(String error) {
+
                         Log.e("BASKET ERROR", error);
-                        ChangeBthState(bthAdd, true);
+
+                        bthAdd.Bth.setEnabled(true);
+
                         progressDialogHelper.progressDialog.hide();
                     }
                 }
         );
-        RBU.execute();
-    }
 
-    public void ChangeBthState(BthCustom bthAdd, boolean isBasket) {
-        if (bthAdd != null) {
-            if (isBasket) {
-                bthAdd.reinit("Убрать", BthCustom.TypeButton.SECONDARY);
-            } else {
-                bthAdd.reinit("Добавить", BthCustom.TypeButton.PRIMARY);
-            }
-        }
+        RBU.execute();
     }
 
     public void CreateProduct(ArrayList<Product> products) {
@@ -165,14 +200,25 @@ public class MainActivity extends AppCompatActivity {
             });
 
             bthAdd.Bth.setOnClickListener(v -> {
-                Log.d("DEBUG_BTN", "=== CLICK on " + product.name + " ===");
-                Log.d("DEBUG_BTN", "Text: " + bthAdd.Bth.getText());
 
-                if(bthAdd.Bth.getText().equals("Добавить")) {
+                String currentText = bthAdd.Bth.getText().toString();
+
+                Log.d("DEBUG_BTN", "=== CLICK on " + product.name + " ===");
+                Log.d("DEBUG_BTN", "Text: " + currentText);
+
+                // блокируем кнопку
+                bthAdd.Bth.setEnabled(false);
+
+                if(currentText.equals("Добавить")) {
+
                     Log.d("DEBUG_BTN", "Calling BasketCreate");
+
                     BasketCreate(product, bthAdd);
+
                 } else {
+
                     Log.d("DEBUG_BTN", "Calling BasketUPD");
+
                     BasketUPD(product, bthAdd);
                 }
             });
@@ -180,5 +226,42 @@ public class MainActivity extends AppCompatActivity {
             llProducts.addView(item);
         }
         progressDialogHelper.progressDialog.hide();
+    }
+
+    public void RequestStockGet() {
+
+        progressDialogHelper.progressDialog.show();
+
+        StockGet RSG = new StockGet(
+                new MyResponseCallback() {
+
+                    @Override
+                    public void onCompile(String result) {
+
+                        ArrayList<Stock> stocks =
+                                new GsonBuilder().create().fromJson(
+                                        result,
+                                        new TypeToken<ArrayList<Stock>>(){}.getType()
+                                );
+
+                        StockAdapter adapter =
+                                new StockAdapter(MainActivity.this, stocks);
+
+                        llStock.setAdapter(adapter);
+
+                        progressDialogHelper.progressDialog.hide();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+
+                        Log.e("STOCK GET", error);
+
+                        progressDialogHelper.progressDialog.hide();
+                    }
+                }
+        );
+
+        RSG.execute();
     }
 }
